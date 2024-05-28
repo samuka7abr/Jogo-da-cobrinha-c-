@@ -4,15 +4,18 @@
 #include <time.h>
 #include <termios.h>
 #include <fcntl.h>
+#include <string.h>
 
 #define WIDTH 20
 #define HEIGHT 20
+#define NAME_LENGTH 50
 
 int x, y, fruitX, fruitY, score;
 int tailX[100], tailY[100];
 int nTail;
 enum Direction { STOP = 0, LEFT, RIGHT, UP, DOWN };
 enum Direction dir;
+char playerName[NAME_LENGTH];
 
 void Setup() {
     dir = RIGHT; // Define uma direção inicial
@@ -21,11 +24,9 @@ void Setup() {
     fruitX = rand() % WIDTH;
     fruitY = rand() % HEIGHT;
     score = 0;
-    printf("Setup completed\n"); // Debug message
 }
 
 void Draw() {
-    // Remover temporariamente o clear
     // system("clear"); // Limpa a tela do console
 
     for (int i = 0; i < WIDTH + 2; i++)
@@ -37,9 +38,9 @@ void Draw() {
             if (j == 0)
                 printf("#");
             if (i == y && j == x)
-                printf("O");
+                printf("✺");
             else if (i == fruitY && j == fruitX)
-                printf("F");
+                printf("⍟"); // Alterado para asterisco
             else {
                 int print = 0;
                 for (int k = 0; k < nTail; k++) {
@@ -63,7 +64,6 @@ void Draw() {
     printf("\n");
 
     printf("Score: %d\n", score);
-    printf("Draw function completed\n"); // Debug message
 }
 
 void Input() {
@@ -81,16 +81,16 @@ void Input() {
 
     switch (c) {
     case 'a':
-        dir = LEFT;
+        if (dir != RIGHT) dir = LEFT;
         break;
     case 'd':
-        dir = RIGHT;
+        if (dir != LEFT) dir = RIGHT;
         break;
     case 'w':
-        dir = UP;
+        if (dir != DOWN) dir = UP;
         break;
     case 's':
-        dir = DOWN;
+        if (dir != UP) dir = DOWN;
         break;
     case 'x':
         dir = STOP;
@@ -98,7 +98,6 @@ void Input() {
     }
 
     tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
-    printf("Input function completed with input: %c\n", c); // Debug message
 }
 
 void Logic() {
@@ -147,23 +146,77 @@ void Logic() {
         fruitY = rand() % HEIGHT;
         nTail++;
     }
-    printf("Logic function completed\n"); // Debug message
+}
+
+void SaveScore(int score, char* name) {
+    FILE *file = fopen("scores.txt", "a");
+    if (file == NULL) {
+        printf("Erro ao abrir o arquivo de scores.\n");
+        return;
+    }
+    fprintf(file, "%s %d\n", name, score);
+    fclose(file);
+}
+
+void DisplayHighScores() {
+    FILE *file = fopen("scores.txt", "r");
+    if (file == NULL) {
+        printf("Nenhum score registrado ainda.\n");
+        return;
+    }
+    char name[NAME_LENGTH];
+    int score;
+    int scores[100];
+    char names[100][NAME_LENGTH];
+    int count = 0;
+    while (fscanf(file, "%s %d", names[count], &scores[count]) != EOF && count < 100) {
+        count++;
+    }
+    fclose(file);
+
+    // Ordenar os scores em ordem decrescente
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = i + 1; j < count; j++) {
+            if (scores[i] < scores[j]) {
+                int temp = scores[i];
+                scores[i] = scores[j];
+                scores[j] = temp;
+                char tempName[NAME_LENGTH];
+                strcpy(tempName, names[i]);
+                strcpy(names[i], names[j]);
+                strcpy(names[j], tempName);
+            }
+        }
+    }
+
+    printf("Top Scores:\n");
+    for (int i = 0; i < count && i < 10; i++) {
+        printf("%d. %s %d\n", i + 1, names[i], scores[i]);
+    }
 }
 
 int main() {
     srand(time(0));
+    DisplayHighScores(); // Exibir os scores antes de iniciar o jogo
+    printf("Digite seu nome: ");
+    fgets(playerName, NAME_LENGTH, stdin);
+    // Remove o caractere de nova linha, se houver
+    size_t len = strlen(playerName);
+    if (len > 0 && playerName[len - 1] == '\n') {
+        playerName[len - 1] = '\0';
+    }
+    printf("Pressione enter para iniciar o jogo...\n");
+    getchar(); // Espera uma tecla ser pressionada para iniciar
     Setup();
     while (dir != STOP) {
-        printf("In loop\n"); // Debug message
         Draw();
-        printf("Drawing done\n"); // Debug message
         Input();
-        printf("Input processed\n"); // Debug message
         Logic();
-        printf("Logic processed\n"); // Debug message
         usleep(100000); // Controla a velocidade da cobrinha
     }
-    printf("Game Over\n"); // Debug message
+    printf("Game Over\n");
+    SaveScore(score, playerName); // Salvar o score com o nome do jogador após o jogo terminar
+    printf("Seu score foi salvo!\n");
     return 0;
 }
 
