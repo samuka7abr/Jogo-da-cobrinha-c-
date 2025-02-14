@@ -21,15 +21,15 @@ Este é um jogo da Cobrinha (Snake Game) desenvolvido em **C** como projeto fina
 ## Como Compilar e Executar
 ### Compilar:
 ```sh
-gcc snake_game.c -o snake_game
+gcc jogo.c -o jogo
 ```
 ### Executar:
 ```sh
-./snake_game
+./jogo
 ```
 
 ## Estrutura do Projeto
-- `snake_game.c` - Arquivo principal do jogo
+- `jogo.c` - Arquivo principal do jogo
 - `scores.txt` - Armazena as pontuações dos jogadores
 
 ## Requisitos
